@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Muzio Prime Ultimate</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="black">
+
+    <div id="splash-screen">
+        <div class="logo-box">
+            <i class="fas fa-compact-disc fa-spin"></i>
+        </div>
+        <h1>Muzio Prime</h1>
+        <p>Feel the Music...</p>
+    </div>
+
+    <div class="app-container">
+        
+        <div id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <span><i class="fas fa-sliders-h"></i> Menu</span>
+                <i class="fas fa-times close-btn" onclick="toggleSidebar()"></i>
+            </div>
+            <ul class="menu-list">
+                <li onclick="toggleSidebar(); document.getElementById('file-upload').click()">
+                    <i class="fas fa-folder-plus"></i> Import Music
+                </li>
+                <li onclick="changeTheme('black')"><i class="fas fa-circle" style="color:#000"></i> Pitch Black</li>
+                <li onclick="changeTheme('purple')"><i class="fas fa-circle" style="color:#6c5ce7"></i> Royal Purple</li>
+                <li onclick="changeTheme('blue')"><i class="fas fa-circle" style="color:#0984e3"></i> Ocean Blue</li>
+                <li onclick="toggleSidebar(); openTimerModal()"><i class="fas fa-hourglass-half"></i> Sleep Timer</li>
+                <li onclick="location.reload()"><i class="fas fa-redo-alt"></i> Reset App</li>
+            </ul>
+        </div>
+        <div id="overlay" onclick="toggleSidebar()"></div>
+
+        <div class="library-view">
+            
+            <div class="header-section">
+                <div class="dashboard-header">
+                    <div class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
+                    <div class="greeting-box">
+                        <span id="greeting-text">Welcome</span>
+                        <div class="badge"><i class="fas fa-music"></i> <span id="total-songs">0</span></div>
+                    </div>
+                    <div class="mic-btn" id="mic-btn" onclick="toggleVoice()">
+                        <i class="fas fa-microphone"></i>
+                    </div>
+                </div>
+
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search your library..." onkeyup="filterSongs()">
+                </div>
+
+                <div class="tabs-wrapper">
+                    <div class="tabs">
+                        <span class="tab active" onclick="switchTab('songs')" id="tab-songs">All Songs</span>
+                        <span class="tab" onclick="switchTab('favorites')" id="tab-favorites">Favorites</span>
+                        <span class="tab" onclick="switchTab('suggested')" id="tab-suggested">Suggested</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scroll-area">
+                <div id="view-songs">
+                    <div class="empty-state" id="empty-state-msg">
+                        <i class="fas fa-music" style="font-size: 4rem; opacity: 0.2; margin-bottom: 20px;"></i>
+                        <p>No songs found</p>
+                        <label for="file-upload" class="add-btn-main">Add Songs</label>
+                    </div>
+                </div>
+
+                <div id="view-favorites" style="display: none;">
+                    <div class="section-title" style="padding:10px 0; color:#aaa; font-size:0.9rem;">Liked Songs</div>
+                    <div id="fav-list"></div>
+                </div>
+
+                <div id="view-suggested" style="display: none;">
+                    <div class="section-title" style="padding:10px 0; color:#aaa; font-size:0.9rem;">Recommended</div>
+                    <div id="suggested-list"></div>
+                </div>
+                
+                <div style="height: 150px;"></div> 
+            </div>
+
+            <label for="file-upload" class="floating-add-btn">
+                <i class="fas fa-plus"></i>
+            </label>
+            <input type="file" id="file-upload" accept="audio/*" multiple hidden>
+        </div>
+
+        <div class="mini-player" id="mini-player" onclick="openFullPlayer()">
+            <div class="mini-left">
+                <img src="https://cdn-icons-png.flaticon.com/512/461/461238.png" id="mini-cover" onerror="this.src='https://cdn-icons-png.flaticon.com/512/461/461238.png'">
+                <div class="mini-text">
+                    <h4 id="mini-title">Muzio Player</h4>
+                    <p id="mini-artist">Select a song</p>
+                </div>
+            </div>
+            <div class="mini-controls">
+                <button id="mini-play-btn" onclick="event.stopPropagation(); togglePlay()">
+                    <i class="fas fa-play"></i>
+                </button>
+            </div>
+            <div class="mini-progress-bar" id="mini-progress"></div>
+        </div>
+
+        <div class="full-player" id="full-player">
+            <img src="" id="bg-blur" class="bg-blur" onerror="this.style.display='none'">
+            
+            <div class="player-header">
+                <i class="fas fa-chevron-down close-btn-full" onclick="closeFullPlayer()"></i>
+                <span>Now Playing</span>
+                <i class="fas fa-ellipsis-v"></i>
+            </div>
+
+            <div class="album-art-container">
+                <img src="https://cdn-icons-png.flaticon.com/512/461/461238.png" id="main-cover" onerror="this.src='https://cdn-icons-png.flaticon.com/512/461/461238.png'">
+            </div>
+
+            <div class="song-info">
+                <div class="text-wrapper">
+                    <h2 id="main-title">Song Title</h2>
+                    <p id="main-artist">Artist Name</p>
+                </div>
+                <i class="far fa-heart" id="fav-btn" onclick="toggleFavorite()"></i>
+            </div>
+
+            <div class="progress-area">
+                <div class="time-bar">
+                    <span id="curr-time">0:00</span>
+                    <span id="total-time">0:00</span>
+                </div>
+                <input type="range" id="progress-bar" value="0" max="100" step="0.1">
+            </div>
+
+            <div class="main-controls">
+                <button class="ctrl-btn small" onclick="prevSong()">
+                    <i class="fas fa-backward"></i>
+                </button>
+                
+                <button class="ctrl-btn big" id="main-play-btn" onclick="togglePlay()">
+                    <i class="fas fa-play"></i>
+                </button>
+                
+                <button class="ctrl-btn small" onclick="nextSong()">
+                    <i class="fas fa-forward"></i>
+                </button>
+            </div>
+
+            <div class="volume-control-container">
+                <i class="fas fa-volume-down"></i>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
+                <i class="fas fa-volume-up"></i>
+            </div>
+        </div>
+
+        <div class="modal" id="timer-modal">
+             <div class="modal-content">
+                <h3>Sleep Timer</h3>
+                <div class="timer-options">
+                    <button onclick="setSleepTimer(15)">15 Min</button>
+                    <button onclick="setSleepTimer(30)">30 Min</button>
+                    <button onclick="setSleepTimer(0)" class="cancel-btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal" id="cutter-modal">
+             <div class="modal-content">
+                <h3>Ringtone Cutter</h3>
+                <p>Please play a song first.</p>
+                <button class="close-modal" onclick="closeModal('cutter-modal')">Close</button>
+            </div>
+        </div>
+
+        <audio id="audio-element"></audio>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

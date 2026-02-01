@@ -1,36 +1,39 @@
 const audio = document.getElementById("audio-core");
-const fileInput = document.getElementById("file-input");
+const fileInput = document.getElementById("hidden-file-input");
 let db, songs = [], songIndex = 0, isPlaying = false;
 let audioCtx, source, filters = [];
 let currentSpeed = 1.0;
 
-// --- 1. STARTUP ---
-function initializeApp() {
-    document.getElementById("start-overlay").style.display = "none";
+// --- 1. SYSTEM INITIALIZATION ---
+function initializeSystem() {
+    document.getElementById("system-overlay").style.display = "none";
     initDB();
     startClock();
     
-    // Auto Greeting & Auto Play
+    // Auto Greeting
     const h = new Date().getHours();
     const msg = h < 12 ? "Good Morning Sir" : h < 18 ? "Good Afternoon Sir" : "Good Evening Sir";
     
-    speak(msg + ". Welcome to Muzio.", () => {
-        // Try to auto-play if songs exist
-        if(songs.length > 0) {
-            playSong(0);
-            speak("Playing your music");
-        }
-    });
+    setTimeout(() => {
+        speak(msg + ". Welcome to Muzio Ultimate.", () => {
+            if(songs.length > 0) {
+                playSong(0);
+                speak("Playing your music");
+            } else {
+                speak("Library is empty. Please import songs.");
+            }
+        });
+    }, 500);
 }
 
-// --- 2. VOICE SYSTEM ---
+// --- 2. VOICE ENGINE ---
 const synth = window.speechSynthesis;
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 function speak(text, callback) {
     if (synth.speaking) synth.cancel();
     
-    // Ducking: Lower volume while speaking
+    // Volume Ducking
     const prevVol = audio.volume;
     if(isPlaying) audio.volume = 0.2;
     
@@ -39,21 +42,19 @@ function speak(text, callback) {
     u.rate = 1;
     
     u.onend = () => {
-        if(isPlaying) audio.volume = prevVol; // Restore
+        if(isPlaying) audio.volume = prevVol; 
         if(callback) callback();
     };
     
     synth.speak(u);
 }
 
-function activateVoice() {
-    if (!SpeechRecognition) { alert("Use Google Chrome"); return; }
+function activateVoiceAssistant() {
+    if (!SpeechRecognition) { alert("Voice not supported on this browser."); return; }
     const rec = new SpeechRecognition();
     rec.lang = 'en-US';
     
-    document.getElementById("voice-overlay").classList.add("active");
-    
-    // Ducking for listening
+    document.getElementById("voice-interface").classList.add("active");
     const prevVol = audio.volume;
     audio.volume = 0.1;
     
@@ -61,31 +62,30 @@ function activateVoice() {
     
     rec.onresult = (e) => {
         const cmd = e.results[0][0].transcript.toLowerCase();
-        document.getElementById("voice-text").innerText = `"${cmd}"`;
-        setTimeout(() => document.getElementById("voice-overlay").classList.remove("active"), 1500);
-        
+        document.getElementById("voice-status").innerText = `"${cmd}"`;
+        setTimeout(() => document.getElementById("voice-interface").classList.remove("active"), 1500);
         audio.volume = prevVol;
         processCommand(cmd);
     };
     
     rec.onerror = () => {
-        document.getElementById("voice-overlay").classList.remove("active");
+        document.getElementById("voice-interface").classList.remove("active");
         audio.volume = prevVol;
     };
 }
 
 function processCommand(cmd) {
-    if (cmd.includes("play")) { if(audio.paused) togglePlay(); speak("Resuming music"); }
-    else if (cmd.includes("stop") || cmd.includes("pause")) { if(!audio.paused) togglePlay(); speak("Music paused"); }
-    else if (cmd.includes("next")) { nextSong(); speak("Playing next track"); }
-    else if (cmd.includes("previous")) { prevSong(); speak("Previous track"); }
-    else if (cmd.includes("volume up")) { audio.volume = Math.min(1, audio.volume + 0.2); speak("Volume up"); updateVolumeSlider(); }
-    else if (cmd.includes("volume down")) { audio.volume = Math.max(0, audio.volume - 0.2); speak("Volume down"); updateVolumeSlider(); }
-    else if (cmd.includes("time")) { speak("It is " + new Date().toLocaleTimeString()); }
-    else { speak("I didn't understand that."); }
+    if (cmd.includes("play")) { if(audio.paused) togglePlayPause(); speak("Resuming"); }
+    else if (cmd.includes("stop") || cmd.includes("pause")) { if(!audio.paused) togglePlayPause(); speak("Paused"); }
+    else if (cmd.includes("next")) { playNextSong(); speak("Next track"); }
+    else if (cmd.includes("previous")) { playPreviousSong(); speak("Previous track"); }
+    else if (cmd.includes("volume up")) { audio.volume = Math.min(1, audio.volume + 0.2); speak("Volume increased"); updateVolUI(); }
+    else if (cmd.includes("volume down")) { audio.volume = Math.max(0, audio.volume - 0.2); speak("Volume decreased"); updateVolUI(); }
+    else if (cmd.includes("theme")) { openModal('theme-modal'); speak("Opening themes"); }
+    else { speak("I didn't understand."); }
 }
 
-function updateVolumeSlider() { document.getElementById("vol-slider").value = audio.volume; }
+function updateVolUI() { document.getElementById("volume-slider").value = audio.volume; }
 
 // --- 3. CLOCK ---
 function startClock() {
@@ -102,7 +102,7 @@ function startClock() {
 
 // --- 4. DATABASE & IMPORT ---
 function initDB() {
-    const req = indexedDB.open("MuzioFinal_V12", 1);
+    const req = indexedDB.open("MuzioPrime_ProDB", 1);
     req.onupgradeneeded = (e) => {
         const db = e.target.result;
         if (!db.objectStoreNames.contains("library")) {
@@ -111,15 +111,17 @@ function initDB() {
     };
     req.onsuccess = (e) => {
         db = e.target.result;
-        loadSongs();
+        loadLibrary();
     };
 }
+
+function triggerFileUpload() { document.getElementById("hidden-file-input").click(); }
 
 fileInput.addEventListener("change", (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
     
-    showToast(`Adding ${files.length} songs...`);
+    showToast(`Processing ${files.length} songs...`);
     const tx = db.transaction("library", "readwrite");
     const store = tx.objectStore("library");
     let count = 0;
@@ -137,59 +139,62 @@ fileInput.addEventListener("change", (e) => {
     });
 
     tx.oncomplete = () => {
-        renderList();
+        renderAllSongs();
         speak(`${count} songs added successfully`);
-        showToast(`${count} Songs Added`);
+        showToast(`${count} Songs Imported`);
         updateCounter();
     };
 });
 
-function loadSongs() {
+function loadLibrary() {
     const tx = db.transaction("library", "readonly");
     const req = tx.objectStore("library").getAll();
     req.onsuccess = () => {
         songs = req.result || [];
         updateCounter();
-        renderList();
+        renderAllSongs();
         renderFavorites();
     };
 }
 
 function updateCounter() {
     document.getElementById("track-counter").innerText = `${songs.length} Tracks`;
+    if(songs.length === 0) {
+        document.getElementById("empty-library-msg").style.display = "block";
+        document.getElementById("library-status").innerText = "Empty Library";
+    } else {
+        document.getElementById("empty-library-msg").style.display = "none";
+        document.getElementById("library-status").innerText = "Ready to Play";
+    }
 }
 
 // --- 5. RENDER UI ---
-function renderList() {
-    const list = document.getElementById("song-list");
+function renderAllSongs() {
+    const list = document.getElementById("all-songs-list");
     list.innerHTML = "";
     
-    if (!songs.length) { document.getElementById("empty-state").style.display = "block"; return; }
-    document.getElementById("empty-state").style.display = "none";
-
     const frag = document.createDocumentFragment();
     songs.forEach((song, index) => {
         const div = document.createElement("div");
-        div.className = `song-row ${index === songIndex ? "playing" : ""}`;
+        div.className = `song-card song-row ${index === songIndex ? "playing" : ""}`;
         const imgId = `img-${song.id}`;
         
         div.innerHTML = `
-            <img src="https://cdn-icons-png.flaticon.com/512/461/461238.png" class="s-img" id="${imgId}">
-            <div class="s-data">
-                <span class="s-title">${song.name.replace('.mp3','')}</span>
-                <span class="s-artist">Local Audio</span>
+            <img src="https://cdn-icons-png.flaticon.com/512/461/461238.png" class="sc-img" id="${imgId}">
+            <div class="sc-info">
+                <span class="sc-title">${song.name.replace('.mp3','')}</span>
+                <span class="sc-artist">Local Audio</span>
             </div>
-            <div class="s-actions">
-                <button class="act-btn fav ${song.isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFav(${song.id})">
+            <div class="sc-actions">
+                <button class="list-btn fav ${song.isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFav(${song.id})">
                     <i class="${song.isFav ? 'fas' : 'far'} fa-heart"></i>
                 </button>
-                <button class="act-btn del" onclick="event.stopPropagation(); deleteSong(${song.id})">
+                <button class="list-btn del" onclick="event.stopPropagation(); deleteSong(${song.id})">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         `;
         
-        // Lazy Art Extraction for Mix
         setTimeout(() => {
             window.jsmediatags.read(song.file, { onSuccess: (t) => { if(t.tags.picture) applyArt(t.tags.picture, imgId); }});
         }, 0);
@@ -207,7 +212,7 @@ function toggleFav(id) {
         songs[idx].isFav = !songs[idx].isFav;
         const tx = db.transaction("library", "readwrite");
         tx.objectStore("library").put(songs[idx]);
-        renderList();
+        renderAllSongs();
         renderFavorites();
         if(songIndex === idx) updatePlayerFav();
     }
@@ -219,25 +224,25 @@ function deleteSong(id) {
     tx.objectStore("library").delete(parseFloat(id));
     tx.oncomplete = () => {
         songs = songs.filter(s => s.id != id);
-        renderList();
+        renderAllSongs();
         renderFavorites();
         updateCounter();
-        showToast("Song Deleted");
+        showToast("Deleted");
     };
 }
 
 function renderFavorites() {
-    const list = document.getElementById("fav-list");
+    const list = document.getElementById("fav-songs-list");
     const favs = songs.filter(s => s.isFav);
     list.innerHTML = "";
     
-    if(!favs.length) { document.getElementById("fav-empty").style.display = "block"; return; }
-    document.getElementById("fav-empty").style.display = "none";
+    if(!favs.length) { document.getElementById("fav-empty-msg").style.display = "block"; return; }
+    document.getElementById("fav-empty-msg").style.display = "none";
     
     favs.forEach(song => {
         const div = document.createElement("div");
-        div.className = "song-row";
-        div.innerHTML = `<i class="fas fa-heart" style="color:#ff4757; margin-right:15px"></i> <span class="s-title">${song.name}</span>`;
+        div.className = "song-card song-row";
+        div.innerHTML = `<i class="fas fa-heart" style="color:#ff4757; margin-right:15px"></i> <span class="sc-title">${song.name}</span>`;
         div.onclick = () => playSong(songs.indexOf(song));
         list.appendChild(div);
     });
@@ -252,18 +257,19 @@ function playSong(index) {
     const song = songs[index];
     audio.src = URL.createObjectURL(song.file);
     
-    document.getElementById("mp-title").innerText = song.name.replace('.mp3','');
-    document.getElementById("fp-title").innerText = song.name.replace('.mp3','');
+    const title = song.name.replace('.mp3','');
+    document.getElementById("mini-title").innerText = title;
+    document.getElementById("main-title").innerText = title;
     
     const def = "https://cdn-icons-png.flaticon.com/512/461/461238.png";
-    document.getElementById("mp-img").src = def;
-    document.getElementById("fp-img").src = def;
-    document.getElementById("fp-bg").src = "";
+    document.getElementById("mini-art").src = def;
+    document.getElementById("fp-main-img").src = def;
+    document.getElementById("fp-blur-img").src = "";
     
     window.jsmediatags.read(song.file, { onSuccess: (t) => { if(t.tags.picture) {
-        applyArt(t.tags.picture, "mp-img");
-        applyArt(t.tags.picture, "fp-img");
-        applyArt(t.tags.picture, "fp-bg");
+        applyArt(t.tags.picture, "mini-art");
+        applyArt(t.tags.picture, "fp-main-img");
+        applyArt(t.tags.picture, "fp-blur-img");
     }}});
 
     updatePlayerFav();
@@ -281,37 +287,22 @@ function updatePlayerFav() {
     icon.style.color = isFav ? "#ff4757" : "#fff";
 }
 
-function togglePlay() {
+function togglePlayPause() {
     if(!songs.length) return;
     if(audio.paused) { audio.play(); isPlaying=true; } else { audio.pause(); isPlaying=false; }
     updateUI();
 }
 function updateUI() {
     const icon = isPlaying ? "fa-pause" : "fa-play";
-    document.getElementById("mp-play-icon").className = `fas ${icon}`;
-    document.getElementById("fp-play-lg").className = `fas ${icon}`;
-    document.getElementById("mp-img").style.animationPlayState = isPlaying ? "running" : "paused";
+    document.getElementById("mini-play-icon").className = `fas ${icon}`;
+    document.getElementById("main-play-icon").className = `fas ${icon}`;
+    document.getElementById("mini-art").style.animationPlayState = isPlaying ? "running" : "paused";
 }
-function nextSong() { playSong((songIndex + 1) % songs.length); }
-function prevSong() { playSong((songIndex - 1 + songs.length) % songs.length); }
+function playNextSong() { playSong((songIndex + 1) % songs.length); }
+function playPreviousSong() { playSong((songIndex - 1 + songs.length) % songs.length); }
 function setVolume(v) { audio.volume = v; }
 
-// --- 8. UTILS & SEARCH ---
-function toggleSearch() {
-    const bar = document.getElementById("search-bar-container");
-    if(bar.style.display === 'flex') { bar.style.display = 'none'; }
-    else { bar.style.display = 'flex'; document.getElementById("search-input").focus(); }
-}
-
-function filterSongs() {
-    const q = document.getElementById("search-input").value.toLowerCase();
-    const rows = document.querySelectorAll(".song-row");
-    rows.forEach(r => {
-        const txt = r.innerText.toLowerCase();
-        r.style.display = txt.includes(q) ? "flex" : "none";
-    });
-}
-
+// --- 8. UTILS ---
 function applyArt(pic, id) {
     const {data, format} = pic;
     let base64 = "";
@@ -319,55 +310,60 @@ function applyArt(pic, id) {
     document.getElementById(id).src = `data:${format};base64,${window.btoa(base64)}`;
 }
 function showToast(msg) {
-    const box = document.getElementById("toast-box");
+    const box = document.getElementById("toast-container");
     const d = document.createElement("div");
-    d.className = "toast";
+    d.className = "toast-msg";
     d.innerText = msg;
     box.appendChild(d);
     setTimeout(() => d.remove(), 3000);
 }
-function generateMix() {
-    const grid = document.getElementById("ai-grid");
+function generateAIMix() {
+    const grid = document.getElementById("ai-grid-container");
     grid.innerHTML = "";
     if(!songs.length) return;
     let picks = [...songs].sort(()=>0.5-Math.random()).slice(0,4);
     picks.forEach(s => {
         const d = document.createElement("div");
         d.className = "grid-item";
-        d.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/461/461238.png"><div class="play-overlay"><i class="fas fa-play"></i></div><p>${s.name.substr(0,10)}...</p>`;
-        
-        // Extract Mix Art
-        const id = `mix-img-${s.id}`;
-        d.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/461/461238.png" id="${id}"><div class="play-overlay"><i class="fas fa-play"></i></div>`;
-        window.jsmediatags.read(s.file, { onSuccess: (t) => { if(t.tags.picture) applyArt(t.tags.picture, id); }});
-
+        d.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/461/461238.png" id="mix-${s.id}"><div class="play-overlay"><i class="fas fa-play"></i></div><p>${s.name.substr(0,10)}...</p>`;
+        window.jsmediatags.read(s.file, { onSuccess: (t) => { if(t.tags.picture) applyArt(t.tags.picture, `mix-${s.id}`); }});
         d.onclick = () => playSong(songs.indexOf(s));
         grid.appendChild(d);
     });
     showToast("Mix Generated");
 }
-function wipeDatabase() { if(confirm("Reset all data?")) { indexedDB.deleteDatabase("MuzioFinal_V12"); location.reload(); } }
+function wipeData() { if(confirm("Format Database?")) { indexedDB.deleteDatabase("MuzioPrime_ProDB"); location.reload(); } }
 
-// UI Toggles
-function toggleMenu() {
-    const s = document.getElementById("sidebar");
-    const o = document.getElementById("sidebar-overlay");
-    if(s.style.left === "0px") { s.style.left = "-100%"; o.classList.remove("active"); }
-    else { s.style.left = "0px"; o.classList.add("active"); }
+// UI Helpers
+function toggleSidebar() {
+    const s = document.getElementById("sidebar-menu");
+    const o = document.getElementById("sidebar-backdrop");
+    if(s.style.left==="0px") { s.style.left="-100%"; o.classList.remove("active"); }
+    else { s.style.left="0px"; o.classList.add("active"); }
 }
-function openFullPlayer() { document.getElementById("full-player").classList.add("active"); }
-function closeFullPlayer() { document.getElementById("full-player").classList.remove("active"); }
-function openModal(id) { document.getElementById(id).classList.add("flex"); toggleMenu(); }
+function toggleSearchBar() {
+    const p = document.getElementById("search-panel");
+    if(p.style.display==='flex') { p.style.display='none'; } else { p.style.display='flex'; document.getElementById("search-input").focus(); }
+}
+function filterSongs() {
+    const q = document.getElementById("search-input").value.toLowerCase();
+    document.querySelectorAll(".song-card").forEach(r => {
+        r.style.display = r.innerText.toLowerCase().includes(q) ? "flex" : "none";
+    });
+}
+function expandPlayer() { document.getElementById("full-player-overlay").classList.add("active"); }
+function collapsePlayer() { document.getElementById("full-player-overlay").classList.remove("active"); }
+function openModal(id) { document.getElementById(id).classList.add("flex"); toggleSidebar(); }
 function closeModal(id) { document.getElementById(id).classList.remove("flex"); }
-function switchTab(t) {
-    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+function switchView(t) {
+    document.querySelectorAll(".view-section").forEach(v=>v.classList.remove("active"));
     document.getElementById(`view-${t}`).classList.add("active");
-    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".tab-item").forEach(b=>b.classList.remove("active"));
     event.target.classList.add("active");
-    if(t==='ai') generateMix();
+    if(t==='ai-mix') generateAIMix();
 }
-function setTheme(c) { document.body.setAttribute('data-theme', c); localStorage.setItem('theme', c); closeModal('theme-modal'); }
-function startTimer(m) { setTimeout(() => { audio.pause(); isPlaying=false; updateUI(); }, m*60000); closeModal('timer-modal'); showToast(`Timer: ${m} mins`); }
+function applyTheme(c) { document.body.setAttribute('data-theme', c); localStorage.setItem('theme', c); closeModal('theme-modal'); }
+function setSleepTimer(m) { setTimeout(() => { audio.pause(); isPlaying=false; updateUI(); }, m*60000); closeModal('timer-modal'); showToast(`Timer: ${m} mins`); }
 function simulateCut() { showToast("Ringtone Saved"); closeModal('cutter-modal'); }
 
 // EQ
@@ -385,21 +381,21 @@ function setupEQ() {
 }
 function updateEQ(i,v) { if(filters[i]) filters[i].gain.value = v; }
 
-// Progress & Time Fix
+// Progress & Time
 audio.addEventListener("timeupdate", () => {
     if(audio.duration) {
         const p = (audio.currentTime/audio.duration)*100;
-        document.getElementById("seek-slider").value = p;
+        document.getElementById("main-seeker").value = p;
         document.getElementById("mp-bar").style.width = p+"%";
         let m = Math.floor(audio.currentTime/60);
         let s = Math.floor(audio.currentTime%60);
-        document.getElementById("curr-time").innerText = `${m}:${s<10?'0'+s:s}`;
+        document.getElementById("current-time").innerText = `${m}:${s<10?'0'+s:s}`;
     }
 });
 audio.addEventListener("loadedmetadata", () => {
     let m = Math.floor(audio.duration/60);
     let s = Math.floor(audio.duration%60);
-    if(m && s) document.getElementById("tot-time").innerText = `${m}:${s<10?'0'+s:s}`;
+    if(m || s) document.getElementById("total-duration").innerText = `${m}:${s<10?'0'+s:s}`;
 });
-audio.addEventListener("ended", nextSong);
-document.getElementById("seek-slider").addEventListener("input", (e) => audio.currentTime = (e.target.value/100)*audio.duration);
+audio.addEventListener("ended", playNextSong);
+document.getElementById("main-seeker").addEventListener("input", (e) => audio.currentTime = (e.target.value/100)*audio.duration);

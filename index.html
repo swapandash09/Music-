@@ -13,152 +13,172 @@
 </head>
 <body data-theme="dark">
 
-    <div id="boot-screen">
-        <div class="boot-loader">
-            <div class="scanner"></div>
-            <i class="fas fa-fingerprint"></i>
-        </div>
-        <h2>System Initializing...</h2>
-        <p>Tap anywhere to Access Muzio Core</p>
-    </div>
-
-    <div id="toast-container"></div>
-
-    <div id="ai-overlay">
-        <div class="ai-visualizer">
-            <span class="bar"></span><span class="bar"></span><span class="bar"></span>
-            <span class="bar"></span><span class="bar"></span>
-        </div>
-        <p id="ai-status">Listening...</p>
-        <div class="ai-suggestions">
-            <span>"Play Music"</span>
-            <span>"Volume 80%"</span>
-            <span>"Change Theme"</span>
+    <div id="system-boot-overlay">
+        <div class="boot-container">
+            <div class="fingerprint-scan">
+                <i class="fas fa-fingerprint"></i>
+                <div class="scan-beam"></div>
+            </div>
+            <h2>Muzio AI OS</h2>
+            <p>Initializing Neural Audio Engine...</p>
+            <button class="boot-btn" onclick="initializeSystem()">TAP TO START</button>
         </div>
     </div>
 
-    <div class="app-wrapper">
+    <div id="notification-hub"></div>
+
+    <div id="voice-hud-overlay">
+        <div class="voice-container">
+            <div class="voice-visualizer">
+                <div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div>
+                <div class="v-bar"></div><div class="v-bar"></div>
+            </div>
+            <h3 id="voice-status-text">Listening...</h3>
+            <p class="voice-guide">Try saying: "Play", "Next", "Volume 80", "Change Theme"</p>
+        </div>
+    </div>
+
+    <div class="app-interface">
         
         <div id="sidebar-backdrop" onclick="toggleSidebar()"></div>
         <aside id="sidebar-panel">
-            <div class="sidebar-header">
-                <i class="fas fa-compact-disc fa-spin"></i>
+            <div class="sidebar-brand">
+                <i class="fas fa-robot fa-spin"></i>
                 <div class="brand-text">
-                    <h3>Muzio AI</h3>
-                    <span>Pro Version</span>
+                    <h3>Muzio Prime</h3>
+                    <span>AI Enhanced</span>
                 </div>
             </div>
             
-            <div class="sidebar-content">
-                <div class="menu-group">
-                    <h4>Library</h4>
-                    <ul>
-                        <li onclick="triggerFileImport()">
-                            <i class="fas fa-folder-plus"></i> Import Songs
-                        </li>
-                        <li onclick="wipeAllData()" class="danger-text">
-                            <i class="fas fa-trash"></i> Clear All Data
-                        </li>
-                    </ul>
-                </div>
+            <div class="sidebar-scroll-area">
+                <div class="menu-category">Media Library</div>
+                <ul class="nav-list">
+                    <li onclick="triggerFileImport()">
+                        <div class="nav-icon"><i class="fas fa-file-audio"></i></div>
+                        <span>Import Local Songs</span>
+                    </li>
+                    <li onclick="switchView('favorites'); toggleSidebar()">
+                        <div class="nav-icon"><i class="fas fa-heart"></i></div>
+                        <span>My Favorites</span>
+                    </li>
+                    <li onclick="switchView('ai-mix'); toggleSidebar()">
+                        <div class="nav-icon"><i class="fas fa-sparkles"></i></div>
+                        <span>AI Mood Mix</span>
+                    </li>
+                </ul>
 
-                <div class="menu-group">
-                    <h4>Tools</h4>
-                    <ul>
-                        <li onclick="openModal('eq-modal')">
-                            <i class="fas fa-sliders-h"></i> Audio Equalizer
-                        </li>
-                        <li onclick="openModal('theme-modal')">
-                            <i class="fas fa-palette"></i> Themes
-                        </li>
-                        <li onclick="openModal('cutter-modal')">
-                            <i class="fas fa-cut"></i> Ringtone Cutter
-                        </li>
-                        <li onclick="openModal('timer-modal')">
-                            <i class="fas fa-clock"></i> Sleep Timer
-                        </li>
-                    </ul>
-                </div>
+                <div class="menu-category">Pro Tools</div>
+                <ul class="nav-list">
+                    <li onclick="openModal('theme-modal')">
+                        <div class="nav-icon"><i class="fas fa-palette"></i></div>
+                        <span>Appearance</span>
+                    </li>
+                    <li onclick="openModal('eq-modal')">
+                        <div class="nav-icon"><i class="fas fa-sliders-h"></i></div>
+                        <span>5-Band Equalizer</span>
+                    </li>
+                    <li onclick="openModal('cutter-modal')">
+                        <div class="nav-icon"><i class="fas fa-cut"></i></div>
+                        <span>Ringtone Cutter</span>
+                    </li>
+                    <li onclick="openModal('timer-modal')">
+                        <div class="nav-icon"><i class="fas fa-hourglass-half"></i></div>
+                        <span>Sleep Timer</span>
+                    </li>
+                </ul>
+
+                <div class="menu-category danger">System</div>
+                <ul class="nav-list">
+                    <li onclick="hardReset()">
+                        <div class="nav-icon danger"><i class="fas fa-trash-alt"></i></div>
+                        <span>Factory Reset</span>
+                    </li>
+                </ul>
             </div>
             
             <div class="sidebar-footer">
-                <p>Developed for Swapan</p>
-                <small>v12.0.5 Build</small>
+                <p>Version 15.0 Ultimate</p>
             </div>
         </aside>
 
         <header class="main-header">
             <div class="header-left">
-                <button class="icon-btn" onclick="toggleSidebar()">
+                <button class="icon-btn ripple" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
                 </button>
             </div>
             
             <div class="header-center">
-                <span id="digital-clock">00:00</span>
+                <span id="system-clock">00:00</span>
                 <small id="library-status">System Ready</small>
             </div>
 
             <div class="header-right">
-                <button class="icon-btn" onclick="toggleSearchBar()">
+                <button class="icon-btn ripple" onclick="toggleSearchBar()">
                     <i class="fas fa-search"></i>
                 </button>
-                <button class="icon-btn mic-btn" onclick="activateVoiceAI()">
+                <button class="icon-btn mic-btn ripple" onclick="activateVoiceAI()">
                     <i class="fas fa-microphone"></i>
-                    <div class="mic-ring"></div>
+                    <div class="mic-pulse"></div>
                 </button>
             </div>
         </header>
 
         <div id="search-panel">
-            <i class="fas fa-search"></i>
-            <input type="text" id="search-input" placeholder="Search song, artist or album..." onkeyup="performSearch()">
-            <button class="close-search" onclick="toggleSearchBar()"><i class="fas fa-times"></i></button>
+            <div class="search-input-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Search song, artist, or album..." onkeyup="performSearch()">
+                <button class="close-search" onclick="toggleSearchBar()"><i class="fas fa-times"></i></button>
+            </div>
         </div>
 
         <nav class="nav-tabs">
-            <button class="tab-item active" onclick="switchView('tracks')">
+            <button class="tab-link active" onclick="switchView('tracks')">
                 <i class="fas fa-music"></i> Tracks
             </button>
-            <button class="tab-item" onclick="switchView('favorites')">
+            <button class="tab-link" onclick="switchView('favorites')">
                 <i class="fas fa-heart"></i> Favorites
             </button>
-            <button class="tab-item" onclick="switchView('ai-mix')">
-                <i class="fas fa-sparkles"></i> AI Mix
+            <button class="tab-link" onclick="switchView('ai-mix')">
+                <i class="fas fa-magic"></i> For You
             </button>
         </nav>
 
-        <main id="content-area">
+        <main id="content-viewport">
             
             <div id="view-tracks" class="view-section active">
-                <div id="empty-library" class="empty-state">
-                    <div class="empty-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                <div id="empty-library-state" class="empty-state">
+                    <div class="empty-icon-glow">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
                     <h3>Library is Empty</h3>
-                    <p>Import local MP3 files to build your database.</p>
-                    <button class="btn-action" onclick="triggerFileImport()">Import Music</button>
+                    <p>Import your local MP3 files to build the database.</p>
+                    <button class="btn-primary-glow" onclick="triggerFileImport()">Import Music</button>
                 </div>
-                <div id="all-songs-list" class="song-list"></div>
+                <div id="all-songs-list" class="song-list-container"></div>
             </div>
 
             <div id="view-favorites" class="view-section">
-                <div id="fav-songs-list" class="song-list"></div>
-                <div id="fav-empty" class="empty-state" style="display:none">
-                    <div class="empty-icon"><i class="far fa-heart"></i></div>
-                    <h3>No Favorites</h3>
-                    <p>Tap the heart icon on songs you love.</p>
+                <div id="fav-songs-list" class="song-list-container"></div>
+                <div id="fav-empty-state" class="empty-state" style="display:none">
+                    <div class="empty-icon-glow"><i class="far fa-heart"></i></div>
+                    <h3>No Favorites Yet</h3>
+                    <p>Tap the heart icon on any song to save it here.</p>
                 </div>
             </div>
 
             <div id="view-ai-mix" class="view-section">
-                <div class="ai-banner">
+                <div class="ai-banner-card">
                     <div class="banner-content">
-                        <h3>Mood Mix</h3>
-                        <p>AI generated playlist based on your listening.</p>
+                        <h3><i class="fas fa-brain"></i> Mood Mix</h3>
+                        <p>AI generated playlist based on your habits.</p>
                     </div>
-                    <button class="refresh-btn" onclick="generateAIMix()"><i class="fas fa-sync"></i> Refresh</button>
+                    <button class="refresh-btn" onclick="generateAIMix()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
                 </div>
-                <h4 class="section-title">Suggested For You</h4>
-                <div id="ai-grid" class="grid-layout"></div>
+                <h4 class="section-heading">Suggested For You</h4>
+                <div id="ai-grid-container" class="grid-layout"></div>
             </div>
 
             <div class="bottom-spacer"></div>
@@ -172,71 +192,71 @@
 
         <div id="mini-player" onclick="expandPlayer()">
             <div class="mini-progress-track">
-                <div id="mini-progress-bar"></div>
+                <div id="mini-progress-fill"></div>
             </div>
-            <div class="mini-left">
+            <div class="mini-content">
                 <img src="https://cdn-icons-png.flaticon.com/512/461/461238.png" id="mini-art">
                 <div class="mini-info">
                     <h4 id="mini-title">Muzio AI</h4>
                     <p id="mini-artist">Select a song</p>
                 </div>
-            </div>
-            <div class="mini-controls">
-                <button class="mini-btn" onclick="event.stopPropagation(); togglePlayPause()">
-                    <i class="fas fa-play" id="mini-play-icon"></i>
-                </button>
+                <div class="mini-controls">
+                    <button class="mini-btn" onclick="event.stopPropagation(); togglePlayPause()">
+                        <i class="fas fa-play" id="mini-play-icon"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div id="full-player">
-            <div class="player-bg">
+        <div id="full-player-overlay">
+            <div class="player-background">
                 <img id="player-blur-bg" src="">
-                <div class="bg-overlay"></div>
+                <div class="black-overlay"></div>
             </div>
             
             <div class="fp-header">
                 <button class="fp-icon" onclick="collapsePlayer()"><i class="fas fa-chevron-down"></i></button>
-                <div class="fp-title">
+                <div class="fp-title-box">
                     <span>NOW PLAYING</span>
-                    <small>Muzio High-Res Audio</small>
+                    <small>High-Res Audio</small>
                 </div>
                 <button class="fp-icon" onclick="openModal('eq-modal')"><i class="fas fa-sliders-h"></i></button>
             </div>
 
-            <div class="fp-art-container">
-                <div class="art-glow"></div>
+            <div class="player-art-box">
+                <div class="art-glow-fx"></div>
                 <img src="https://cdn-icons-png.flaticon.com/512/461/461238.png" id="main-art">
             </div>
 
-            <div class="fp-info">
-                <div class="fp-details">
+            <div class="player-info-row">
+                <div class="info-text">
                     <h2 id="main-title">Song Title</h2>
                     <p id="main-artist">Artist Name</p>
                 </div>
-                <button class="fav-btn-lg" onclick="toggleCurrentFavorite()">
+                <button class="fav-toggle-btn" onclick="toggleCurrentFavorite()">
                     <i class="far fa-heart" id="main-fav-icon"></i>
                 </button>
             </div>
 
-            <div class="fp-seeker">
-                <div class="time-info">
+            <div class="player-seeker-box">
+                <div class="time-labels">
                     <span id="current-time">0:00</span>
                     <span id="total-duration">0:00</span>
                 </div>
                 <input type="range" id="main-seeker" value="0" max="100" step="0.1">
             </div>
 
-            <div class="fp-controls">
-                <button class="ctrl-icon" onclick="showToast('Shuffle Mode Toggled')"><i class="fas fa-random"></i></button>
-                <button class="ctrl-icon medium" onclick="playPreviousSong()"><i class="fas fa-step-backward"></i></button>
-                <button class="play-btn-xl" onclick="togglePlayPause()">
+            <div class="player-controls">
+                <button class="ctrl-btn secondary" onclick="showToast('Shuffle: Toggled')"><i class="fas fa-random"></i></button>
+                <button class="ctrl-btn primary" onclick="playPreviousSong()"><i class="fas fa-step-backward"></i></button>
+                <button class="play-pause-btn-lg" onclick="togglePlayPause()">
                     <i class="fas fa-play" id="main-play-icon"></i>
                 </button>
-                <button class="ctrl-icon medium" onclick="playNextSong()"><i class="fas fa-step-forward"></i></button>
-                <button class="ctrl-icon" onclick="showToast('Repeat Mode Toggled')"><i class="fas fa-redo"></i></button>
+                <button class="ctrl-btn primary" onclick="playNextSong()"><i class="fas fa-step-forward"></i></button>
+                <button class="ctrl-btn secondary" onclick="showToast('Repeat: All')"><i class="fas fa-redo"></i></button>
             </div>
             
-            <div class="fp-volume">
+            <div class="volume-box">
                 <i class="fas fa-volume-down"></i>
                 <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="1" oninput="changeVolume(this.value)">
                 <i class="fas fa-volume-up"></i>
@@ -245,24 +265,36 @@
 
         <div id="theme-modal" class="modal-backdrop">
             <div class="modal-content">
-                <h3>App Appearance</h3>
+                <h3>Interface Theme</h3>
                 <div class="theme-grid">
-                    <div class="theme-option purple" onclick="applyTheme('purple')"><div class="dot"></div><span>Neon</span></div>
-                    <div class="theme-option blue" onclick="applyTheme('blue')"><div class="dot"></div><span>Ocean</span></div>
-                    <div class="theme-option green" onclick="applyTheme('green')"><div class="dot"></div><span>Matrix</span></div>
-                    <div class="theme-option red" onclick="applyTheme('red')"><div class="dot"></div><span>Mars</span></div>
+                    <div class="theme-card purple" onclick="setTheme('purple')">
+                        <div class="color-swatch"></div>
+                        <span>Neon</span>
+                    </div>
+                    <div class="theme-card blue" onclick="setTheme('blue')">
+                        <div class="color-swatch"></div>
+                        <span>Ocean</span>
+                    </div>
+                    <div class="theme-card green" onclick="setTheme('green')">
+                        <div class="color-swatch"></div>
+                        <span>Forest</span>
+                    </div>
+                    <div class="theme-card red" onclick="setTheme('red')">
+                        <div class="color-swatch"></div>
+                        <span>Fire</span>
+                    </div>
                 </div>
-                <button class="modal-close" onclick="closeModal('theme-modal')">Close</button>
+                <button class="close-modal-btn" onclick="closeModal('theme-modal')">Close Menu</button>
             </div>
         </div>
 
         <div id="eq-modal" class="modal-backdrop">
-            <div class="modal-content large">
-                <div class="modal-header">
+            <div class="modal-content eq-content">
+                <div class="eq-header">
                     <h3>5-Band Equalizer</h3>
-                    <span class="badge-pro">PRO</span>
+                    <span class="pro-tag">PRO</span>
                 </div>
-                <div class="eq-container">
+                <div class="eq-bands-wrapper">
                     <div class="eq-band">
                         <input type="range" orient="vertical" min="-12" max="12" value="0" oninput="updateEQ(0,this.value)">
                         <span>60Hz</span>
@@ -284,26 +316,26 @@
                         <span>14kHz</span>
                     </div>
                 </div>
-                <button class="modal-close" onclick="closeModal('eq-modal')">Apply Settings</button>
+                <button class="close-modal-btn" onclick="closeModal('eq-modal')">Apply Settings</button>
             </div>
         </div>
 
         <div id="cutter-modal" class="modal-backdrop">
             <div class="modal-content">
-                <h3>MP3 Cutter</h3>
-                <div class="wave-visualizer">
-                    <div class="wave-bars">
-                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                <h3>Ringtone Cutter</h3>
+                <div class="waveform-box">
+                    <div class="wave-lines">
+                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
                     </div>
                 </div>
-                <div class="time-range">
+                <div class="time-inputs">
                     <input type="text" value="00:00" readonly>
                     <span>to</span>
                     <input type="text" value="00:30" readonly>
                 </div>
                 <div class="modal-actions">
-                    <button class="btn-primary" onclick="simulateCut()">Save Cut</button>
-                    <button class="btn-secondary" onclick="closeModal('cutter-modal')">Cancel</button>
+                    <button class="primary-btn" onclick="simulateCut()">Save Cut</button>
+                    <button class="secondary-btn" onclick="closeModal('cutter-modal')">Cancel</button>
                 </div>
             </div>
         </div>
@@ -312,12 +344,12 @@
             <div class="modal-content">
                 <h3>Sleep Timer</h3>
                 <div class="timer-grid">
-                    <button onclick="setSleepTimer(15)">15 Min</button>
-                    <button onclick="setSleepTimer(30)">30 Min</button>
-                    <button onclick="setSleepTimer(45)">45 Min</button>
-                    <button onclick="setSleepTimer(60)">1 Hour</button>
+                    <button class="timer-btn" onclick="setSleepTimer(15)">15 min</button>
+                    <button class="timer-btn" onclick="setSleepTimer(30)">30 min</button>
+                    <button class="timer-btn" onclick="setSleepTimer(60)">1 Hour</button>
+                    <button class="timer-btn" onclick="setSleepTimer(120)">2 Hours</button>
                 </div>
-                <button class="modal-close" onclick="closeModal('timer-modal')">Cancel</button>
+                <button class="close-modal-btn" onclick="closeModal('timer-modal')">Cancel</button>
             </div>
         </div>
 
